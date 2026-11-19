@@ -47,9 +47,11 @@ def town(d, postcode):
 def main():
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
     try:
-        prev = {c["ref"]: c for c in get(PREVIOUS).get("cuts", [])}
+        old_feed = get(PREVIOUS)
     except Exception:
-        prev = {}
+        old_feed = {}
+    prev = {c["ref"]: c for c in old_feed.get("cuts", [])}
+    since = old_feed.get("tracking_since") or now.isoformat().replace("+00:00", "Z")
     live = {}
     for f in get(SSEN).get("Faults", []):
         ds = sorted({p.split(" ")[0].upper() for p in f.get("affectedAreas") or []})
@@ -75,7 +77,7 @@ def main():
             if c["started"] and dt.datetime.fromisoformat(c["started"].replace("Z", "+00:00")) >= cutoff]
     keep.sort(key=lambda c: c["started"], reverse=True)
     out = {"source": "SSEN Power Track", "updated": now.isoformat().replace("+00:00", "Z"),
-           "days": KEEP_DAYS, "cuts": keep}
+           "days": KEEP_DAYS, "tracking_since": since, "cuts": keep}
     Path("site").mkdir(exist_ok=True)
     Path("site/feed.json").write_text(json.dumps(out, indent=1))
     print(f"{len(live)} live, {len(keep)} in the last {KEEP_DAYS} days")
