@@ -10,6 +10,7 @@ import datetime as dt
 import gzip
 import json
 import re
+import time
 import urllib.request
 from pathlib import Path
 
@@ -46,10 +47,16 @@ def town(d, postcode):
 
 def main():
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
-    try:
-        old_feed = get(PREVIOUS)
-    except Exception:
-        old_feed = {}
+    # the previous feed carries the 7 day list and the running totals; if it cannot be read,
+    # stop (the job fails and GitHub keeps serving the old feed) rather than wipe the history
+    for attempt in range(3):
+        try:
+            old_feed = get(PREVIOUS)
+            break
+        except Exception:
+            if attempt == 2:
+                raise
+            time.sleep(20)
     prev = {c["ref"]: c for c in old_feed.get("cuts", [])}
     since = old_feed.get("tracking_since") or now.isoformat().replace("+00:00", "Z")
     live = {}
@@ -66,6 +73,10 @@ def main():
             "expected_back": (f.get("estimatedRestoration") or "").replace("+0000", "Z").replace(".000", ""),
             "back": None,
         }
+    new_refs = [r for r in live if r not in prev]
+    total_cuts = old_feed.get("total_cuts", len(prev)) + len(new_refs)
+    total_homes = old_feed.get("total_homes", sum(c["homes"] or 0 for c in prev.values())) \
+        + sum(live[r]["homes"] or 0 for r in new_refs)
     cuts = dict(prev)
     for ref, c in live.items():
         cuts[ref] = c
@@ -74,10 +85,12 @@ def main():
             c["back"] = now.isoformat().replace("+00:00", "Z")   # gone from SSEN's map: power is back
     cutoff = now - dt.timedelta(days=KEEP_DAYS)
     keep = [c for c in cuts.values()
-            if c["started"] and dt.datetime.fromisoformat(c["started"].replace("Z", "+00:00")) >= cutoff]
+            if c["started"] and (not c.get("back")   # a cut still live stays listed, so it is never counted twice
+                                 or dt.datetime.fromisoformat(c["started"].replace("Z", "+00:00")) >= cutoff)]
     keep.sort(key=lambda c: c["started"], reverse=True)
     out = {"source": "SSEN Power Track", "updated": now.isoformat().replace("+00:00", "Z"),
-           "days": KEEP_DAYS, "tracking_since": since, "cuts": keep}
+           "days": KEEP_DAYS, "tracking_since": since,
+           "total_cuts": total_cuts, "total_homes": total_homes, "cuts": keep}
     Path("site").mkdir(exist_ok=True)
     Path("site/feed.json").write_text(json.dumps(out, indent=1))
     print(f"{len(live)} live, {len(keep)} in the last {KEEP_DAYS} days")
