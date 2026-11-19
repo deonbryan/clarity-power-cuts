@@ -1,0 +1,37 @@
+{
+ "areas": {
+  "SO": "Southampton",
+  "PO": "Portsmouth",
+  "BH": "Bournemouth",
+  "SP": "Salisbury",
+  "RG": "Reading",
+  "GU": "Guildford",
+  "RH": "Redhill",
+  "SL": "Slough",
+  "HP": "Hemel Hempstead",
+  "TW": "Twickenham",
+  "KT": "Kingston",
+  "UB": "Uxbridge",
+  "CR": "Croydon"
+ },
+ "districts": {
+  "GU47": "Sandhurst",
+  "GU46": "Yateley",
+  "GU15": "Camberley",
+  "GU16": "Frimley",
+  "GU17": "Blackwater",
+  "GU14": "Farnborough",
+  "GU51": "Fleet",
+  "GU52": "Fleet",
+  "RG40": "Wokingham",
+  "RG41": "Wokingham",
+  "RG42": "Bracknell",
+  "RG12": "Bracknell",
+  "RG45": "Crowthorne",
+  "SP10": "Andover",
+  "SP11": "Andover",
+  "RH10": "Crawley",
+  "RH11": "Crawley",
+  "RH1": "Redhill"
+ }
+}
