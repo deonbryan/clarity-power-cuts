@@ -23,3 +23,16 @@ jobs:
         with:
           path: site
       - uses: actions/deploy-pages@v4
+  next:
+    # GitHub's own schedule did not fire on 19 Nov 2026, so each run starts the next one
+    # about 15 minutes later. If the chain ever breaks, the schedule above or the Mac's
+    # 4-hourly check (power-cuts/check.py) starts it again.
+    needs: feed
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: sleep 840 && gh workflow run feed.yml -R "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
